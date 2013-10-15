@@ -1,5 +1,6 @@
 *.class
-
+# target in maven
+target
 # Package Files #
 *.jar
 *.war
