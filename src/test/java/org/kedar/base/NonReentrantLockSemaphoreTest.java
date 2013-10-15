@@ -37,18 +37,51 @@ public class NonReentrantLockSemaphoreTest {
     }
 
     @Test
-    public void binarySemaphoreBlocks() throws InterruptedException {
-        Semaphore bs = new Semaphore(1);
+    public void binarySemaphoreWaitsWithSameThreadAcquiringTwice() throws InterruptedException {
+        Semaphore bs = new Semaphore(1, true);
         TwoTimeAcquirer target = new TwoTimeAcquirer(bs);
         Thread t = new Thread(target);
         t.start();
         while(!target.acquiredOnce)
             Thread.sleep(1000);
-        System.out.println(t.getState());
-        assertEquals(Thread.State.BLOCKED, t.getState());
-
+        assertEquals(Thread.State.WAITING, t.getState());
     }
 
+    @Test
+    public void secondThreadBlocksWithBinarySemaphore() throws InterruptedException {
+        Semaphore bs = new Semaphore(1);
+        OneTimeAcquirer r1 = new OneTimeAcquirer(bs);
+        Thread t1 = new Thread(r1);
+        OneTimeAcquirer r2 = new OneTimeAcquirer(bs);
+        Thread t2 = new Thread(r2);
+        t1.start();
+        while (!r1.acquired)
+            Thread.sleep(1000);
+        assertEquals(0, bs.availablePermits());
+        t2.start();
+        while(!r2.running)
+            Thread.sleep(1000);
+        assertEquals(Thread.State.BLOCKED, t2.getState());
+    }
+
+
+    private static class OneTimeAcquirer implements Runnable {
+        private final Semaphore s;
+        volatile boolean acquired = false;
+        volatile boolean running = false;
+        public OneTimeAcquirer(Semaphore s) {
+            this.s = s;
+        }
+        public void run() {
+            try {
+                running = true;
+                s.acquire();
+                this.acquired = true;
+            } catch (InterruptedException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+        }
+    }
     private static class TwoTimeAcquirer implements Runnable {
         private final Semaphore s;
         volatile boolean acquiredOnce = false;
