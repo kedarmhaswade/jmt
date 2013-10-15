@@ -48,7 +48,7 @@ public class NonReentrantLockSemaphoreTest {
     }
 
     @Test
-    public void secondThreadBlocksWithBinarySemaphore() throws InterruptedException {
+    public void secondThreadWaitsWithBinarySemaphore() throws InterruptedException {
         Semaphore bs = new Semaphore(1);
         OneTimeAcquirer r1 = new OneTimeAcquirer(bs);
         Thread t1 = new Thread(r1);
@@ -61,7 +61,8 @@ public class NonReentrantLockSemaphoreTest {
         t2.start();
         while(!r2.running)
             Thread.sleep(1000);
-        assertEquals(Thread.State.BLOCKED, t2.getState());
+        // See: http://cs.oswego.edu/pipermail/concurrency-interest/2013-October/011897.html
+        assertEquals(Thread.State.WAITING, t2.getState());
     }
 
 
